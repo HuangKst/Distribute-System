@@ -80,6 +80,32 @@ export class SimpleAppStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "Get Movie Function Url", { value: getMovieByIdURL.url });
 
+    const getAllMoviesFn = new lambdanode.NodejsFunction(this, "GetAllMoviesFn", {
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: `${__dirname}/../lambdas/getAllMovies.ts`,
+      timeout: cdk.Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: moviesTable.tableName,
+        REGION: "eu-west-1", 
+      },
+    });
+    
+    // 创建一个 Function URL（公开访问）
+    const getAllMoviesURL = getAllMoviesFn.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE, // 公开访问
+      cors: {
+        allowedOrigins: ["*"],
+      },
+    });
+    
+    // 允许 Lambda 读取 Movies 表的数据
+    moviesTable.grantReadData(getAllMoviesFn);
+    
+    // 终端输出 Lambda URL，方便测试
+    new cdk.CfnOutput(this, "Get All Movies Function Url", { value: getAllMoviesURL.url });
+    
 
   }
 }
